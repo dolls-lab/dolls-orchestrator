@@ -72,4 +72,4 @@ fixtures 位于 `tests/fixtures/terminal_protocol_v0.json`，供后续 loopback 
 - abort 后设备播放缓冲是否可靠清空；
 - 家庭局域网地址、TLS 与 token 配置方式。
 
-下一项可离线完成的 change 是 loopback WebSocket transport：把真实文本/二进制帧适配到本模块，但仍使用内存客户端和伪 Opus payload，不依赖设备、模型 API 或角色声音。
+后续离线 change 已完成 [WebSocket loopback](./terminal-websocket-loopback.md)、[原生 Opus](./native-opus-codec.md) 和 [终端服务 runner](./terminal-service-runner.md)。协议仍保持 draft v0；升级为 v1 必须等待 [Atom VoiceS3R 实机证据](./automated-mvp-status.md#必须等待外部证据)。

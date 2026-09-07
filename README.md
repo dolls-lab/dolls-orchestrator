@@ -2,6 +2,8 @@
 
 `dolls-orchestrator` 是角色语音设备的家庭局域网对话编排服务。
 
+当前自动化实施范围、证据和必须等待 API/实机的项目见 [自动化 MVP 状态](./docs/automated-mvp-status.md)。
+
 它负责接收桌面客户端或 Atom VoiceS3R 终端的语音请求，依次协调 ASR、角色对话和角色 TTS，并把可播放的流式音频返回终端。
 
 ## 当前范围

@@ -78,4 +78,4 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
 - 取消后连接仍保持 idle，可接受下一轮；
 - 不产生外部网络、模型下载、麦克风或 API 操作。
 
-原生库安装、发现顺序、raw packet 限制和真实回环测试见 [原生 Opus codec](./native-opus-codec.md)。下一步可以把协议、transport、bridge、codec 和离线 profile 组合成一个显式启动的终端服务 runner；局域网暴露与生产级抖动处理仍不属于本基线。
+原生库安装、发现顺序、raw packet 限制和真实回环测试见 [原生 Opus codec](./native-opus-codec.md)。协议、transport、bridge、codec 和离线 profile 已由 [终端服务 runner](./terminal-service-runner.md) 完成显式装配；局域网实机兼容与生产级抖动处理仍属于 [外部验证范围](./automated-mvp-status.md#必须等待外部证据)。
