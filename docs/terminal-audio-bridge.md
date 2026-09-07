@@ -1,15 +1,15 @@
 # 终端音频编排桥接基线
 
 > 状态：协议草案 v0 的 codec-neutral 编排桥接
-> 自动验证：合成 codec + 离线 ASR/LLM/TTS
-> 真实 Opus、硬件和云端 API：均未启用
+> 自动验证：合成 codec + 原生 Opus + 离线 ASR/LLM/TTS
+> 硬件和云端 API：均未启用
 
 ## 数据路径
 
 `OrchestratorTerminalBridge` 实现 WebSocket transport 所需的异步 turn handler：
 
 ```text
-16 kHz mono Opus frames（当前为 synthetic bytes）
+16 kHz mono raw Opus frames
   │ TerminalAudioCodec.decode_uplink
   ▼
 16 kHz mono PCM s16le
@@ -21,10 +21,10 @@ TurnOrchestrator
 PCM + transcript + reply
   │ TerminalAudioCodec.encode_downlink
   ▼
-24 kHz mono Opus frames（当前为 synthetic bytes）
+24 kHz mono raw Opus frames
 ```
 
-桥接器不认识具体 Opus 库，也不改变 ASR、LLM 或 TTS adapter。真实 codec 只需实现两个异步方法：
+桥接器不认识具体 Opus 库，也不改变 ASR、LLM 或 TTS adapter。仓库提供的 `LibOpusCodec` 通过系统 `libopus` 实现以下两个异步方法：
 
 - `decode_uplink(frames, UPLINK_AUDIO)`：保持帧顺序，返回 `DecodedTerminalAudio`；
 - `encode_downlink(pcm, source_format, DOWNLINK_AUDIO)`：完成需要的重采样和编码，返回有序 bytes 帧。
@@ -78,6 +78,4 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
 - 取消后连接仍保持 idle，可接受下一轮；
 - 不产生外部网络、模型下载、麦克风或 API 操作。
 
-## 下一步边界
-
-下一项工作应对可用 Opus 方案做独立探索和基准，验证 16 kHz 解码、24 kHz 编码、60 ms 分帧、重采样质量、取消延迟和 macOS/Linux 可部署性。在真实 codec 通过 fixture 与音频检查之前，本基线不能用于宣称真实固件可播放。
+原生库安装、发现顺序、raw packet 限制和真实回环测试见 [原生 Opus codec](./native-opus-codec.md)。下一步可以把协议、transport、bridge、codec 和离线 profile 组合成一个显式启动的终端服务 runner；局域网暴露与生产级抖动处理仍不属于本基线。

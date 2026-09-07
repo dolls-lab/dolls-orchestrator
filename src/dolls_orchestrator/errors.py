@@ -53,6 +53,11 @@ class TerminalAudioBridgeError(OrchestratorError):
         super().__init__(message, "terminal_audio_bridge")
 
 
+class OpusCodecError(OrchestratorError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "terminal_audio_codec")
+
+
 class StageTimeoutError(OrchestratorError):
     pass
 
