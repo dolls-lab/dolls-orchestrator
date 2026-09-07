@@ -38,6 +38,16 @@ class EvaluationExecutionError(OrchestratorError):
         super().__init__(message, "evaluation")
 
 
+class TerminalProtocolError(OrchestratorError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "terminal_protocol")
+
+
+class TerminalStateError(OrchestratorError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "terminal_session")
+
+
 class StageTimeoutError(OrchestratorError):
     pass
 

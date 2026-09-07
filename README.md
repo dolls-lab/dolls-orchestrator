@@ -43,6 +43,8 @@ openspec init --tools codex --profile core
 
 编排服务支持独立加载 `dolls-character` 发布的 contract-v1 角色包。未配置角色包时继续使用具名内置回退；显式配置的包如果损坏或不兼容，启动会直接失败，不会悄悄回退。
 
+仓库同时提供小智兼容终端协议草案 v0 的纯协议 codec、fixtures 和连接级状态机。它用于离线冻结握手、控制消息、音频参数、取消和旧 generation 丢弃语义；尚未包含 WebSocket 监听、Opus 编解码或 Atom VoiceS3R 实机兼容结论。
+
 项目推荐 Python 3.12；标准库离线核心也兼容开发机自带的 Python 3.9。推荐后续使用 `uv` 创建 Python 3.12 环境：
 
 ```sh
@@ -242,3 +244,4 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
 首次实测结果见 [本地无 API 基线](./docs/local-no-api-baseline.md)。
 角色包接入结果见 [三月七角色包消费基线](./docs/character-package-baseline.md)。
 角色评测采集结果见 [三月七离线评测基线](./docs/character-evaluation-baseline.md)。
+终端协议范围与离线兼容基线见 [小智终端协议草案 v0](./docs/terminal-protocol-v0.md)。

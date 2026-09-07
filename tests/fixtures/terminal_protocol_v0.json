@@ -1,0 +1,82 @@
+{
+  "client": {
+    "abort": {
+      "reason": "user_cancelled",
+      "session_id": "fixture-session",
+      "type": "abort"
+    },
+    "goodbye": {
+      "session_id": "fixture-session",
+      "type": "goodbye"
+    },
+    "hello": {
+      "audio_params": {
+        "channels": 1,
+        "format": "opus",
+        "frame_duration": 60,
+        "sample_rate": 16000
+      },
+      "transport": "websocket",
+      "type": "hello",
+      "version": 1
+    },
+    "listen_start": {
+      "mode": "manual",
+      "session_id": "fixture-session",
+      "state": "start",
+      "type": "listen"
+    },
+    "listen_stop": {
+      "session_id": "fixture-session",
+      "state": "stop",
+      "type": "listen"
+    }
+  },
+  "draft_version": "0",
+  "server": {
+    "hello": {
+      "audio_params": {
+        "channels": 1,
+        "format": "opus",
+        "frame_duration": 60,
+        "sample_rate": 24000
+      },
+      "session_id": "fixture-session",
+      "transport": "websocket",
+      "type": "hello"
+    },
+    "llm": {
+      "emotion": "happy",
+      "session_id": "fixture-session",
+      "text": "😀",
+      "type": "llm"
+    },
+    "stt": {
+      "session_id": "fixture-session",
+      "text": "你好",
+      "type": "stt"
+    },
+    "tts_sentence": {
+      "session_id": "fixture-session",
+      "state": "sentence_start",
+      "text": "你好呀！",
+      "type": "tts"
+    },
+    "tts_start": {
+      "session_id": "fixture-session",
+      "state": "start",
+      "type": "tts"
+    },
+    "tts_stop": {
+      "session_id": "fixture-session",
+      "state": "stop",
+      "type": "tts"
+    }
+  },
+  "upstream": {
+    "commit": "e8d8a40",
+    "protocol_version": 1,
+    "release": "v2.4.2",
+    "repository": "https://github.com/78/xiaozhi-esp32"
+  }
+}
