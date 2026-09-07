@@ -43,7 +43,7 @@ openspec init --tools codex --profile core
 
 编排服务支持独立加载 `dolls-character` 发布的 contract-v1 角色包。未配置角色包时继续使用具名内置回退；显式配置的包如果损坏或不兼容，启动会直接失败，不会悄悄回退。
 
-仓库同时提供小智兼容终端协议草案 v0 的纯协议 codec、fixtures 和连接级状态机。它用于离线冻结握手、控制消息、音频参数、取消和旧 generation 丢弃语义；尚未包含 WebSocket 监听、Opus 编解码或 Atom VoiceS3R 实机兼容结论。
+仓库同时提供小智兼容终端协议草案 v0 的纯协议 codec、fixtures、连接级状态机和可选 WebSocket 传输层。传输层使用真实 localhost TCP/WebSocket 验证握手、控制消息、原始音频帧、取消和旧 generation 丢弃语义；尚未包含 Opus 编解码、模型编排桥接或 Atom VoiceS3R 实机兼容结论。
 
 项目推荐 Python 3.12；标准库离线核心也兼容开发机自带的 Python 3.9。推荐后续使用 `uv` 创建 Python 3.12 环境：
 
@@ -152,6 +152,18 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
 
 health 只检查角色包完整性、本地 Python import、macOS 命令以及 DeepSeek 的开关/key 是否配置；它不会下载或加载模型、打开麦克风、执行 TTS、播放音频或访问网络。详情见 [服务就绪预检](./docs/service-readiness.md)。
 
+## 终端 WebSocket loopback
+
+安装 Python 3.9 兼容的可选传输依赖：
+
+```sh
+uv pip install -e '.[terminal]'
+```
+
+传输模块提供默认仅绑定 `127.0.0.1` 的 `serve_terminal(...)` API。它在 `/xiaozhi/v1/` 升级握手前验证 protocol、device、client 和 bearer headers，再把当前轮的原始上行帧交给注入式异步 handler。handler 返回的 STT、LLM、TTS 生命周期和原始下行帧按固定顺序发送；abort、goodbye 或断线会取消 handler 并禁止旧 generation 继续输出。
+
+当前 API 是协议与并发边界，不是完整语音服务启动命令：它不会解码 Opus、运行 ASR/LLM/TTS 或打开局域网监听。实现和本地验证说明见 [终端 WebSocket loopback](./docs/terminal-websocket-loopback.md)。
+
 MLX Whisper 的预留配置：
 
 ```sh
@@ -248,7 +260,7 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
   python3 -m unittest discover -s tests -v
 ```
 
-测试覆盖配置校验、角色包契约/完整性/路径边界、评测 fixture 与报告契约、案例隔离和失败续跑、消息顺序、角色 telemetry、适配器契约、MLX 注入边界、DeepSeek 网络保护、请求结构、SSE 解析、HTTP 错误、macOS 命令边界、麦克风录音、播放取消、交互状态、中文分句、上下文上限、超时、旧 generation 清理、失败恢复和 WAV-to-WAV 端到端输出。
+测试覆盖配置校验、角色包契约/完整性/路径边界、评测 fixture 与报告契约、案例隔离和失败续跑、消息顺序、角色 telemetry、适配器契约、MLX 注入边界、DeepSeek 网络保护、请求结构、SSE 解析、HTTP 错误、macOS 命令边界、麦克风录音、播放取消、交互状态、中文分句、上下文上限、超时、旧 generation 清理、失败恢复和 WAV-to-WAV 端到端输出。安装 `terminal` extra 后，测试还会通过真实 localhost socket 验证 WebSocket transport；未安装时只跳过这组可选集成测试。
 
 ## 后续启用顺序
 
