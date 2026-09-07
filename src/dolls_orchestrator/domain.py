@@ -102,6 +102,7 @@ class TurnTelemetry:
     character_id: str = ""
     character_version: str = ""
     status: str = "running"
+    first_audio_ms: Optional[float] = None
     total_ms: float = 0.0
     stages: Dict[str, StageTelemetry] = field(default_factory=dict)
     error_stage: Optional[str] = None
@@ -116,6 +117,11 @@ class TurnTelemetry:
             "character_id": self.character_id,
             "character_version": self.character_version,
             "status": self.status,
+            "first_audio_ms": (
+                round(self.first_audio_ms, 3)
+                if self.first_audio_ms is not None
+                else None
+            ),
             "total_ms": round(self.total_ms, 3),
             "stages": {
                 name: {

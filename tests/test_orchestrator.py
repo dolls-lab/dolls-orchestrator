@@ -84,6 +84,8 @@ class OrchestratorTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual("march-7th", result.telemetry.character_id)
             self.assertEqual("0.1.0", result.telemetry.character_version)
             telemetry = result.telemetry.to_dict()
+            self.assertGreater(telemetry["first_audio_ms"], 0)
+            self.assertLessEqual(telemetry["first_audio_ms"], telemetry["total_ms"])
             self.assertNotIn("system_prompt", telemetry)
             self.assertNotIn("character-session", str(telemetry.get("character_version")))
 
@@ -107,6 +109,7 @@ class OrchestratorTests(unittest.IsolatedAsyncioTestCase):
             telemetry = orchestrator.last_telemetry.to_dict()
             self.assertEqual("march-7th", telemetry["character_id"])
             self.assertEqual("0.1.0", telemetry["character_version"])
+            self.assertIsNone(telemetry["first_audio_ms"])
             self.assertNotIn("你是测试", str(telemetry))
 
     async def test_timeout_has_typed_telemetry(self):

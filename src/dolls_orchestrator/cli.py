@@ -9,6 +9,7 @@ import sys
 from typing import Optional, Sequence
 
 from .audio import write_wav
+from .benchmark import run_benchmark, write_benchmark_report
 from .character import load_character_package, resolve_character
 from .config import ConfigurationError, Settings
 from .desktop_audio import AfplayPlayer, SoundDeviceRecorder
@@ -106,6 +107,19 @@ def _parser() -> argparse.ArgumentParser:
         help="explicitly allow a non-loopback bind address",
     )
     terminal.add_argument("--character-package", type=Path)
+    benchmark = subparsers.add_parser(
+        "benchmark-turns", help="measure sequential voice-turn reliability"
+    )
+    benchmark.add_argument("--input", required=True, type=Path)
+    benchmark.add_argument("--output", required=True, type=Path)
+    benchmark.add_argument(
+        "--profile",
+        choices=("offline", "offline-macos", "local-no-api", "local-voice"),
+        default="offline",
+    )
+    benchmark.add_argument("--turns", type=int, default=5)
+    benchmark.add_argument("--session-id", default="reliability-benchmark")
+    benchmark.add_argument("--character-package", type=Path)
     return parser
 
 
@@ -189,6 +203,31 @@ async def _serve_terminal(args: argparse.Namespace, settings: Settings) -> int:
     return 0
 
 
+async def _benchmark_turns(args: argparse.Namespace, settings: Settings) -> int:
+    if args.turns <= 0:
+        raise ConfigurationError("--turns must be greater than zero")
+    profile = build_profile(args.profile, settings)
+    character = resolve_character(settings.character_package_path)
+    orchestrator = TurnOrchestrator(
+        asr=profile.asr,
+        llm=profile.llm,
+        tts=profile.tts,
+        settings=settings,
+        character=character,
+    )
+    report = await run_benchmark(
+        orchestrator,
+        args.input,
+        args.turns,
+        args.profile,
+        session_id=args.session_id,
+    )
+    write_benchmark_report(args.output, report)
+    print(json.dumps(report.summary(), ensure_ascii=False, sort_keys=True))
+    print("Report: %s" % args.output)
+    return 1 if report.failed_count else 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = _parser().parse_args(argv)
     try:
@@ -232,6 +271,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return 0 if report.ready else 1
         if args.command == "serve-terminal":
             return asyncio.run(_serve_terminal(args, settings))
+        if args.command == "benchmark-turns":
+            return asyncio.run(_benchmark_turns(args, settings))
         raise ConfigurationError("unknown command")
     except (ConfigurationError, OrchestratorError, ValueError) as exc:
         print("error: %s" % exc, file=sys.stderr)

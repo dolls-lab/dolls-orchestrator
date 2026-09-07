@@ -166,6 +166,20 @@ uv pip install -e '.[terminal]'
 
 设置 `DOLLS_TERMINAL_TOKEN` 后，可以先用 `health --terminal` 预检，再通过 `serve-terminal --profile offline` 启动完整的无 API 服务。默认只监听 `127.0.0.1:8765`；非回环地址还必须显式使用 `--allow-lan`。配置、安全边界和关闭语义见 [终端服务 runner](./docs/terminal-service-runner.md)。
 
+## 连续对话基准
+
+使用一个有效 WAV 可以顺序采集多轮成功率、端到端首个合成音频 P50/P95、总耗时 P50/P95 和失败后立即恢复情况：
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
+  .venv/bin/python -m dolls_orchestrator benchmark-turns \
+  --profile offline --turns 20 \
+  --input /path/to/input.wav \
+  --output .artifacts/offline-reliability.json
+```
+
+报告不保留对话文本、音频、输入路径、运行时 ID 或凭据。当前只提供测量基线，不在缺少真实 API/设备证据时臆定产品阈值；详见 [连续对话可靠性与延迟基线](./docs/reliability-benchmark.md)。
+
 MLX Whisper 的预留配置：
 
 ```sh

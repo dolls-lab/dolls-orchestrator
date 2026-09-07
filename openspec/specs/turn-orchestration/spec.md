@@ -3,9 +3,7 @@
 ## Purpose
 
 Define the generation-aware voice-turn lifecycle, bounded context, incremental synthesis scheduling, recovery, and telemetry.
-
 ## Requirements
-
 ### Requirement: Generation-aware turn lifecycle
 The orchestrator SHALL assign each turn a session ID, turn ID, and generation ID and SHALL transition it through listening-input, transcribing, generating, synthesizing, completed, cancelled, or failed states.
 
@@ -51,12 +49,12 @@ Each external stage SHALL have a configured timeout, and failure of one turn MUS
 - **THEN** the new turn executes from a clean generation state
 
 ### Requirement: Privacy-preserving telemetry
-The system SHALL record stage durations, end-to-end duration, selected provider and model versions, active character ID and package version, token usage when available, and terminal status without recording secrets, raw audio content, package paths, prompts, examples, or source-claim text.
+The system SHALL record stage durations, end-to-end first-audio latency when audio is produced, end-to-end duration, selected provider and model versions, active character ID and package version, token usage when available, and terminal status without recording secrets, raw audio content, package paths, prompts, examples, or source-claim text.
 
 #### Scenario: Successful telemetry record
 - **WHEN** a turn completes with a loaded character package
-- **THEN** one structured summary contains identifiers, character ID and version, provider versions, measurements, usage, and success status
+- **THEN** one structured summary contains identifiers, character ID and version, provider versions, first-audio and total measurements, usage, and success status
 
 #### Scenario: Error telemetry record
 - **WHEN** a turn fails after startup
-- **THEN** the summary contains the normalized error type, stage, and non-sensitive character metadata without API credentials or character content
+- **THEN** the summary contains the normalized error type, stage, optional first-audio measurement, and non-sensitive character metadata without API credentials or character content

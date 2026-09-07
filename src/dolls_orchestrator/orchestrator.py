@@ -143,6 +143,9 @@ class TurnOrchestrator:
                             if output_format is None:
                                 output_format = chunk.audio_format
                                 tts_first_ms = (time.perf_counter() - tts_started) * 1000
+                                telemetry.first_audio_ms = (
+                                    time.perf_counter() - total_started
+                                ) * 1000
                             elif output_format != chunk.audio_format:
                                 raise ProviderUnavailableError(
                                     "TTS changed audio format within a turn", stage="tts"
@@ -175,6 +178,9 @@ class TurnOrchestrator:
                     if output_format is None:
                         output_format = chunk.audio_format
                         tts_first_ms = (time.perf_counter() - tts_started) * 1000
+                        telemetry.first_audio_ms = (
+                            time.perf_counter() - total_started
+                        ) * 1000
                     elif output_format != chunk.audio_format:
                         raise ProviderUnavailableError(
                             "TTS changed audio format within a turn", stage="tts"

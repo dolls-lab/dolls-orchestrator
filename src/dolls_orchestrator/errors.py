@@ -38,6 +38,16 @@ class EvaluationExecutionError(OrchestratorError):
         super().__init__(message, "evaluation")
 
 
+class BenchmarkValidationError(OrchestratorError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "configuration")
+
+
+class BenchmarkExecutionError(OrchestratorError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "benchmark")
+
+
 class TerminalProtocolError(OrchestratorError):
     def __init__(self, message: str) -> None:
         super().__init__(message, "terminal_protocol")
