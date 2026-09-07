@@ -2,13 +2,14 @@
 
 import asyncio
 import audioop
+import importlib.util
 from pathlib import Path
 import time
 from typing import Any, Callable, Mapping, Optional
 import wave
 
 from ..audio import inspect_wav
-from ..domain import ASRResult, TurnContext
+from ..domain import ASRResult, AdapterHealth, TurnContext
 from ..errors import ProviderConfigurationError, ProviderUnavailableError
 
 
@@ -66,7 +67,22 @@ class MLXWhisperAdapter:
 
     def __init__(self, model: str, runner: Optional[WhisperRunner] = None) -> None:
         self.model = model
+        self._uses_default_runner = runner is None
         self.runner = runner or _default_runner
+
+    def health(self) -> AdapterHealth:
+        if not self._uses_default_runner:
+            return AdapterHealth("asr", self.provider, self.model, "ready")
+        for module_name in ("mlx_whisper", "numpy"):
+            if importlib.util.find_spec(module_name) is None:
+                return AdapterHealth(
+                    "asr",
+                    self.provider,
+                    self.model,
+                    "blocked",
+                    "dependency_missing_%s" % module_name,
+                )
+        return AdapterHealth("asr", self.provider, self.model, "ready")
 
     async def transcribe(self, audio_path: Path, context: TurnContext) -> ASRResult:
         started = time.perf_counter()

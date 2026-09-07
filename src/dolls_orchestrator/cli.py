@@ -18,6 +18,7 @@ from .evaluation import (
     write_evaluation_report,
 )
 from .errors import OrchestratorError
+from .health import check_service_health
 from .interactive import InteractiveSession
 from .orchestrator import TurnOrchestrator
 from .profiles import build_profile
@@ -72,6 +73,15 @@ def _parser() -> argparse.ArgumentParser:
         default="offline",
         help="LLM profile; local-voice retains DeepSeek network and key guards",
     )
+    health = subparsers.add_parser(
+        "health", help="check character and adapter readiness without external I/O"
+    )
+    health.add_argument(
+        "--profile",
+        choices=("offline", "offline-macos", "local-no-api", "local-voice"),
+        help="adapter profile; overrides DOLLS_PROFILE",
+    )
+    health.add_argument("--character-package", type=Path)
     return parser
 
 
@@ -169,6 +179,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return 0
         if args.command == "evaluate-character":
             return asyncio.run(_evaluate_character(args, settings))
+        if args.command == "health":
+            report = check_service_health(args.profile or settings.profile, settings)
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+            return 0 if report.ready else 1
         raise ConfigurationError("unknown command")
     except (ConfigurationError, OrchestratorError, ValueError) as exc:
         print("error: %s" % exc, file=sys.stderr)

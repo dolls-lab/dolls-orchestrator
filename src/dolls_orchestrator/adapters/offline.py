@@ -10,6 +10,7 @@ from typing import AsyncIterator, Mapping, Sequence
 from ..audio import inspect_wav
 from ..domain import (
     ASRResult,
+    AdapterHealth,
     AudioChunk,
     AudioFormat,
     LLMEvent,
@@ -24,6 +25,9 @@ class OfflineASRAdapter:
 
     def __init__(self, transcript: str) -> None:
         self.transcript = transcript
+
+    def health(self) -> AdapterHealth:
+        return AdapterHealth("asr", self.provider, self.model, "ready")
 
     async def transcribe(self, audio_path: Path, context: TurnContext) -> ASRResult:
         started = time.perf_counter()
@@ -48,6 +52,9 @@ class OfflineLLMAdapter:
         self.reply = reply
         self.chunk_chars = max(1, chunk_chars)
         self.delay_seconds = max(0.0, delay_seconds)
+
+    def health(self) -> AdapterHealth:
+        return AdapterHealth("llm", self.provider, self.model, "ready")
 
     async def stream_reply(
         self, messages: Sequence[Mapping[str, str]], context: TurnContext
@@ -76,6 +83,9 @@ class ToneTTSAdapter:
 
     def __init__(self, sample_rate: int = 24000) -> None:
         self.audio_format = AudioFormat(sample_rate=sample_rate)
+
+    def health(self) -> AdapterHealth:
+        return AdapterHealth("tts", self.provider, self.model, "ready")
 
     async def synthesize(self, request: SynthesisRequest) -> AsyncIterator[AudioChunk]:
         started = time.perf_counter()

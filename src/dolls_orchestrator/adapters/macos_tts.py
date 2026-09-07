@@ -8,7 +8,7 @@ import time
 from typing import AsyncIterator, Awaitable, Callable, Optional, Sequence
 
 from ..audio import read_wav_pcm
-from ..domain import AudioChunk, SynthesisRequest
+from ..domain import AdapterHealth, AudioChunk, SynthesisRequest
 from ..errors import ProviderConfigurationError, ProviderUnavailableError
 
 
@@ -47,6 +47,21 @@ class MacOSSayTTSAdapter:
         self.voice = voice
         self.sample_rate = sample_rate
         self.command_runner = command_runner or _run_command
+
+    def health(self) -> AdapterHealth:
+        model = "%s:%s" % (self.model, self.voice)
+        if self.command_runner is not _run_command:
+            return AdapterHealth("tts", self.provider, model, "ready")
+        for name in ("say", "afconvert"):
+            if shutil.which(name) is None:
+                return AdapterHealth(
+                    "tts",
+                    self.provider,
+                    model,
+                    "blocked",
+                    "command_missing_%s" % name,
+                )
+        return AdapterHealth("tts", self.provider, model, "ready")
 
     def _check_commands(self) -> None:
         if self.command_runner is not _run_command:

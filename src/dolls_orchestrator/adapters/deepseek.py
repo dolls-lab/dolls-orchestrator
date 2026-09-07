@@ -9,7 +9,7 @@ from typing import Any, AsyncIterator, Mapping, Optional, Protocol, Sequence
 from urllib import error as urlerror
 from urllib import request as urlrequest
 
-from ..domain import LLMEvent, TurnContext
+from ..domain import AdapterHealth, LLMEvent, TurnContext
 from ..errors import ProviderConfigurationError, ProviderUnavailableError
 
 
@@ -108,6 +108,17 @@ class DeepSeekLLMAdapter:
         self.max_output_tokens = max_output_tokens
         self.timeout_seconds = timeout_seconds
         self.transport = transport or UrllibSSETransport()
+
+    def health(self) -> AdapterHealth:
+        if not self.network_enabled:
+            return AdapterHealth(
+                "llm", self.provider, self.model, "blocked", "network_disabled"
+            )
+        if not self._api_key:
+            return AdapterHealth(
+                "llm", self.provider, self.model, "blocked", "credential_missing"
+            )
+        return AdapterHealth("llm", self.provider, self.model, "ready")
 
     async def stream_reply(
         self, messages: Sequence[Mapping[str, str]], context: TurnContext

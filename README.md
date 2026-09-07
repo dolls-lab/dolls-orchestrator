@@ -134,6 +134,24 @@ export DOLLS_DEEPSEEK_NETWORK_ENABLED=false
 
 不要将真实 key 写入仓库、命令输出、测试 fixture 或普通日志。只有准备执行真实请求时才将最后一个开关改为 `true`。适配器使用 Chat Completions SSE、`deepseek-v4-flash` 和非思考模式。
 
+## 服务就绪检查
+
+在运行对话或启动后续局域网服务前，可以进行无副作用的结构预检：
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
+  python3 -m dolls_orchestrator health --profile offline
+
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
+  .venv/bin/python -m dolls_orchestrator health \
+  --profile local-no-api \
+  --character-package ../dolls-character/packages/march-7th/0.1.0
+```
+
+报告按 character、ASR、LLM、TTS 顺序列出 `ready` 或 `blocked`，并给出有限 reason code。全部就绪时退出 0，任一组件阻塞时退出 1，普通配置解析错误仍退出 2。
+
+health 只检查角色包完整性、本地 Python import、macOS 命令以及 DeepSeek 的开关/key 是否配置；它不会下载或加载模型、打开麦克风、执行 TTS、播放音频或访问网络。详情见 [服务就绪预检](./docs/service-readiness.md)。
+
 MLX Whisper 的预留配置：
 
 ```sh
@@ -217,6 +235,7 @@ PYTHONPATH=src .venv/bin/python scripts/mic_smoke.py --seconds 1 --device 0
 - 遥测包含非敏感的角色 ID 与角色包版本，但不包含角色包路径、提示词、示例或来源主张；
 - 遥测不包含 API key、原始音频或完整对话正文；
 - DeepSeek 默认禁止联网；只有环境 key 和显式网络开关同时存在时才允许请求；
+- health 输出只包含 provider、model、状态和有限 reason code，不包含 key 值、角色包路径或角色内容；
 - 角色评测报告会包含评测问题、rubric 和模型回复，应作为本地审阅产物保存在 `.artifacts/`；
 - 交互录音和回复 WAV 使用逐轮临时目录，播放或失败后自动删除。
 

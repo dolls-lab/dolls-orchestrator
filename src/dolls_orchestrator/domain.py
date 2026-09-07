@@ -72,6 +72,28 @@ class StageTelemetry:
     usage: Dict[str, int] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class AdapterHealth:
+    stage: str
+    provider: str
+    model: str
+    status: str
+    reason: Optional[str] = None
+
+    @property
+    def ready(self) -> bool:
+        return self.status == "ready"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "stage": self.stage,
+            "provider": self.provider,
+            "model": self.model,
+            "status": self.status,
+            "reason": self.reason,
+        }
+
+
 @dataclass
 class TurnTelemetry:
     session_id: str
@@ -126,11 +148,17 @@ class TurnResult:
 
 
 class ASRAdapter(Protocol):
+    def health(self) -> AdapterHealth:
+        ...
+
     async def transcribe(self, audio_path: Path, context: TurnContext) -> ASRResult:
         ...
 
 
 class LLMAdapter(Protocol):
+    def health(self) -> AdapterHealth:
+        ...
+
     def stream_reply(
         self, messages: Sequence[Mapping[str, str]], context: TurnContext
     ) -> AsyncIterator[LLMEvent]:
@@ -138,5 +166,8 @@ class LLMAdapter(Protocol):
 
 
 class TTSAdapter(Protocol):
+    def health(self) -> AdapterHealth:
+        ...
+
     def synthesize(self, request: SynthesisRequest) -> AsyncIterator[AudioChunk]:
         ...
