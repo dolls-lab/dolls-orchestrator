@@ -162,7 +162,7 @@ uv pip install -e '.[terminal]'
 
 传输模块提供默认仅绑定 `127.0.0.1` 的 `serve_terminal(...)` API。它在 `/xiaozhi/v1/` 升级握手前验证 protocol、device、client 和 bearer headers，再把当前轮的原始上行帧交给注入式异步 handler。handler 返回的 STT、LLM、TTS 生命周期和原始下行帧按固定顺序发送；abort、goodbye 或断线会取消 handler 并禁止旧 generation 继续输出。
 
-当前 API 是协议与并发边界，不是完整语音服务启动命令：它不会解码 Opus、运行 ASR/LLM/TTS 或打开局域网监听。实现和本地验证说明见 [终端 WebSocket loopback](./docs/terminal-websocket-loopback.md)。
+`OrchestratorTerminalBridge` 已经可以把注入式 codec 解码出的 16 kHz PCM 经临时 WAV 交给现有 ASR/LLM/TTS 编排器，再要求 codec 编码为 24 kHz 下行帧。当前仍没有选择真实 Opus 实现，也不是完整语音服务启动命令，不会默认打开局域网监听。实现和本地验证说明见 [终端 WebSocket loopback](./docs/terminal-websocket-loopback.md) 与 [终端音频编排桥接](./docs/terminal-audio-bridge.md)。
 
 MLX Whisper 的预留配置：
 

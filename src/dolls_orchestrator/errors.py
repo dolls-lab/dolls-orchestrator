@@ -48,6 +48,11 @@ class TerminalStateError(OrchestratorError):
         super().__init__(message, "terminal_session")
 
 
+class TerminalAudioBridgeError(OrchestratorError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "terminal_audio_bridge")
+
+
 class StageTimeoutError(OrchestratorError):
     pass
 

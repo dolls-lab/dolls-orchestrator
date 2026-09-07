@@ -79,6 +79,6 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
 
 - synthetic bytes 不是经过验证的 Opus 音频；
 - loopback 成功不代表 Atom VoiceS3R 固件已经兼容；
-- 尚未连接 `TurnOrchestrator`，不会运行 ASR、LLM 或 TTS；
+- 已提供可注入 codec 的 `TurnOrchestrator` 桥接器，但尚未选择或实现真实 Opus codec；
 - 尚未提供生产服务命令、TLS、LAN 部署或重连策略；
 - 协议仍为 draft v0，必须通过指定固件实测后才能冻结 v1。
