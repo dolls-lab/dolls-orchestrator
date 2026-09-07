@@ -12,6 +12,11 @@ from .audio import write_wav
 from .character import load_character_package, resolve_character
 from .config import ConfigurationError, Settings
 from .desktop_audio import AfplayPlayer, SoundDeviceRecorder
+from .evaluation import (
+    load_evaluation_fixture,
+    run_evaluation,
+    write_evaluation_report,
+)
 from .errors import OrchestratorError
 from .interactive import InteractiveSession
 from .orchestrator import TurnOrchestrator
@@ -55,6 +60,18 @@ def _parser() -> argparse.ArgumentParser:
         "character-info", help="show active character metadata"
     )
     character_info.add_argument("--character-package", type=Path)
+    evaluate = subparsers.add_parser(
+        "evaluate-character", help="run a text-only character evaluation fixture"
+    )
+    evaluate.add_argument("--character-package", required=True, type=Path)
+    evaluate.add_argument("--evaluations", required=True, type=Path)
+    evaluate.add_argument("--output", required=True, type=Path)
+    evaluate.add_argument(
+        "--profile",
+        choices=("offline", "local-voice"),
+        default="offline",
+        help="LLM profile; local-voice retains DeepSeek network and key guards",
+    )
     return parser
 
 
@@ -108,6 +125,17 @@ async def _chat(args: argparse.Namespace, settings: Settings) -> int:
     return 0
 
 
+async def _evaluate_character(args: argparse.Namespace, settings: Settings) -> int:
+    character = load_character_package(args.character_package)
+    fixture = load_evaluation_fixture(args.evaluations, character)
+    profile = build_profile(args.profile, settings)
+    report = await run_evaluation(fixture, character, profile.llm, args.profile)
+    write_evaluation_report(args.output, report)
+    print(json.dumps(report.summary(), ensure_ascii=False, sort_keys=True))
+    print("Report: %s" % args.output)
+    return 1 if report.failed_count else 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = _parser().parse_args(argv)
     try:
@@ -139,6 +167,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 sort_keys=True,
             ))
             return 0
+        if args.command == "evaluate-character":
+            return asyncio.run(_evaluate_character(args, settings))
         raise ConfigurationError("unknown command")
     except (ConfigurationError, OrchestratorError, ValueError) as exc:
         print("error: %s" % exc, file=sys.stderr)

@@ -101,6 +101,25 @@ PYTHONPATH=src python3 -m dolls_orchestrator character-info \
 
 输出只包含角色 ID、显示名、包版本、语言、示例数量、来源类型和主张数量，不输出提示词、示例或来源正文。
 
+## 角色评测采集
+
+使用独立的文本评测 fixture 跑角色包，不经过 ASR 或 TTS：
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
+  python3 -m dolls_orchestrator evaluate-character \
+  --profile offline \
+  --character-package ../dolls-character/packages/march-7th/0.1.0 \
+  --evaluations ../dolls-character/evaluations/march-7th-v0.1.json \
+  --output .artifacts/march-7th-offline-evaluation.json
+```
+
+每个案例单独使用角色 system instruction、示例对和当前问题，不继承其他评测案例的输入或回复。报告包含问题、rubric、模型回复、provider、model、usage、耗时和错误类型，但不包含角色提示词、角色示例、包路径或密钥。
+
+当前阶段只采集，不自动判断语义 rubric 是否通过，因此所有成功案例的 `score` 仍为 `null`。`offline` profile 只验证评测管线；它返回固定回复，不能代表角色一致性得分。报告包含对话文本，建议写入已被 Git 忽略的 `.artifacts/`。
+
+将来用户填写 DeepSeek key 后，可以把 profile 改为 `local-voice`。网络开关和 API key 保护仍然生效；默认状态会生成失败诊断报告并返回非零状态，不会发出网络请求。
+
 DeepSeek 流式适配器配置：
 
 ```sh
@@ -196,6 +215,7 @@ PYTHONPATH=src .venv/bin/python scripts/mic_smoke.py --seconds 1 --device 0
 - 遥测包含非敏感的角色 ID 与角色包版本，但不包含角色包路径、提示词、示例或来源主张；
 - 遥测不包含 API key、原始音频或完整对话正文；
 - DeepSeek 默认禁止联网；只有环境 key 和显式网络开关同时存在时才允许请求；
+- 角色评测报告会包含评测问题、rubric 和模型回复，应作为本地审阅产物保存在 `.artifacts/`；
 - 交互录音和回复 WAV 使用逐轮临时目录，播放或失败后自动删除。
 
 ## 验证
@@ -207,7 +227,7 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
   python3 -m unittest discover -s tests -v
 ```
 
-测试覆盖配置校验、角色包契约/完整性/路径边界、消息顺序、角色 telemetry、适配器契约、MLX 注入边界、DeepSeek 网络保护、请求结构、SSE 解析、HTTP 错误、macOS 命令边界、麦克风录音、播放取消、交互状态、中文分句、上下文上限、超时、旧 generation 清理、失败恢复和 WAV-to-WAV 端到端输出。
+测试覆盖配置校验、角色包契约/完整性/路径边界、评测 fixture 与报告契约、案例隔离和失败续跑、消息顺序、角色 telemetry、适配器契约、MLX 注入边界、DeepSeek 网络保护、请求结构、SSE 解析、HTTP 错误、macOS 命令边界、麦克风录音、播放取消、交互状态、中文分句、上下文上限、超时、旧 generation 清理、失败恢复和 WAV-to-WAV 端到端输出。
 
 ## 后续启用顺序
 
@@ -215,8 +235,10 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
 2. 用真实中文 WAV 建立本地 ASR 准确率与耗时基线；
 3. 使用三月七 `0.1.0` 角色包运行本地交互基线；
 4. 用户在本机设置 `DEEPSEEK_API_KEY` 并显式开启网络开关；
-5. 用固定问题集记录 DeepSeek 首 token、端到端延迟、用量和角色一致性基线；
-6. 用 `dolls-voice` 流式 TTS 替换 macOS 系统声音。
+5. 用 `evaluate-character` 和固定问题集采集 DeepSeek 回复、耗时与用量；
+6. 通过人工或独立 judge 工作流为 rubric 评分，建立角色一致性基线；
+7. 用 `dolls-voice` 流式 TTS 替换 macOS 系统声音。
 
 首次实测结果见 [本地无 API 基线](./docs/local-no-api-baseline.md)。
 角色包接入结果见 [三月七角色包消费基线](./docs/character-package-baseline.md)。
+角色评测采集结果见 [三月七离线评测基线](./docs/character-evaluation-baseline.md)。

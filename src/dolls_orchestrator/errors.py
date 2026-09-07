@@ -28,6 +28,16 @@ class CharacterPackageError(OrchestratorError):
         super().__init__(message, "configuration")
 
 
+class EvaluationValidationError(OrchestratorError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "configuration")
+
+
+class EvaluationExecutionError(OrchestratorError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "evaluation")
+
+
 class StageTimeoutError(OrchestratorError):
     pass
 

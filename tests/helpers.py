@@ -63,3 +63,30 @@ def write_character_package(root: Path) -> Path:
         "package_version": "0.1.0",
     })
     return root
+
+
+def write_evaluation_fixture(path: Path, cases=None, **overrides) -> Path:
+    if cases is None:
+        cases = [
+            {
+                "id": "case-identity",
+                "category": "identity",
+                "user": "请介绍一下自己。",
+                "rubric": ["身份信息准确", "表达自然"],
+            },
+            {
+                "id": "case-style",
+                "category": "casual-style",
+                "user": "下午做些什么？",
+                "rubric": ["语气轻快", "回复简短"],
+            },
+        ]
+    payload = {
+        "character_id": "march-7th",
+        "evaluation_version": "0.1.0",
+        "language": "zh-CN",
+        "cases": cases,
+    }
+    payload.update(overrides)
+    _json(path, payload)
+    return path
