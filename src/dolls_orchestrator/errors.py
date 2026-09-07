@@ -23,6 +23,11 @@ class ProviderUnavailableError(OrchestratorError):
     pass
 
 
+class CharacterPackageError(OrchestratorError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "configuration")
+
+
 class StageTimeoutError(OrchestratorError):
     pass
 

@@ -77,6 +77,8 @@ class TurnTelemetry:
     session_id: str
     turn_id: str
     generation_id: str
+    character_id: str = ""
+    character_version: str = ""
     status: str = "running"
     total_ms: float = 0.0
     stages: Dict[str, StageTelemetry] = field(default_factory=dict)
@@ -89,6 +91,8 @@ class TurnTelemetry:
             "session_id": self.session_id,
             "turn_id": self.turn_id,
             "generation_id": self.generation_id,
+            "character_id": self.character_id,
+            "character_version": self.character_version,
             "status": self.status,
             "total_ms": round(self.total_ms, 3),
             "stages": {

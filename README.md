@@ -41,6 +41,8 @@ openspec init --tools codex --profile core
 
 真实 MLX Whisper 路径直接读取并规范化 PCM WAV，不依赖 FFmpeg。
 
+编排服务支持独立加载 `dolls-character` 发布的 contract-v1 角色包。未配置角色包时继续使用具名内置回退；显式配置的包如果损坏或不兼容，启动会直接失败，不会悄悄回退。
+
 项目推荐 Python 3.12；标准库离线核心也兼容开发机自带的 Python 3.9。推荐后续使用 `uv` 创建 Python 3.12 环境：
 
 ```sh
@@ -83,7 +85,21 @@ export DOLLS_ASR_TIMEOUT_SECONDS=60
 export DOLLS_LLM_TIMEOUT_SECONDS=30
 export DOLLS_TTS_TIMEOUT_SECONDS=30
 export DOLLS_OUTPUT_SAMPLE_RATE=24000
+export DOLLS_CHARACTER_PACKAGE_PATH=/path/to/character-package
 ```
+
+角色包路径不是必填项，也可以通过 `run-turn` 或 `chat` 的 `--character-package` 临时覆盖。命令行参数优先于环境变量。
+
+检查包与当前角色：
+
+```sh
+PYTHONPATH=src python3 -m dolls_orchestrator validate-character \
+  ../dolls-character/packages/march-7th/0.1.0
+PYTHONPATH=src python3 -m dolls_orchestrator character-info \
+  --character-package ../dolls-character/packages/march-7th/0.1.0
+```
+
+输出只包含角色 ID、显示名、包版本、语言、示例数量、来源类型和主张数量，不输出提示词、示例或来源正文。
 
 DeepSeek 流式适配器配置：
 
@@ -150,6 +166,7 @@ HF_HOME="$PWD/.cache/huggingface" \
 PYTHONPATH=src \
 .venv/bin/python -m dolls_orchestrator chat \
   --profile local-no-api \
+  --character-package ../dolls-character/packages/march-7th/0.1.0 \
   --device 0
 ```
 
@@ -176,6 +193,7 @@ PYTHONPATH=src .venv/bin/python scripts/mic_smoke.py --seconds 1 --device 0
 - 短期对话上下文只保存在当前进程内，进程退出即清除；
 - 失败或取消的轮次不会写入上下文；
 - 遥测包含随机会话/轮次/生成 ID、provider、模型名、耗时、token 用量和错误类型；
+- 遥测包含非敏感的角色 ID 与角色包版本，但不包含角色包路径、提示词、示例或来源主张；
 - 遥测不包含 API key、原始音频或完整对话正文；
 - DeepSeek 默认禁止联网；只有环境 key 和显式网络开关同时存在时才允许请求；
 - 交互录音和回复 WAV 使用逐轮临时目录，播放或失败后自动删除。
@@ -189,15 +207,16 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
   python3 -m unittest discover -s tests -v
 ```
 
-测试覆盖配置校验、适配器契约、MLX 注入边界、DeepSeek 网络保护、请求结构、SSE 解析、HTTP 错误、macOS 命令边界、麦克风录音、播放取消、交互状态、中文分句、上下文上限、超时、旧 generation 清理、失败恢复和 WAV-to-WAV 端到端输出。
+测试覆盖配置校验、角色包契约/完整性/路径边界、消息顺序、角色 telemetry、适配器契约、MLX 注入边界、DeepSeek 网络保护、请求结构、SSE 解析、HTTP 错误、macOS 命令边界、麦克风录音、播放取消、交互状态、中文分句、上下文上限、超时、旧 generation 清理、失败恢复和 WAV-to-WAV 端到端输出。
 
 ## 后续启用顺序
 
 1. 安装并固定 Python 3.12、`mlx-whisper` 和 Whisper 模型 revision；
 2. 用真实中文 WAV 建立本地 ASR 准确率与耗时基线；
-3. 用户在本机设置 `DEEPSEEK_API_KEY` 并显式开启网络开关；
-4. 用固定问题集记录 DeepSeek 首 token、端到端延迟和用量基线；
-5. 用角色包替换临时提示词；
+3. 使用三月七 `0.1.0` 角色包运行本地交互基线；
+4. 用户在本机设置 `DEEPSEEK_API_KEY` 并显式开启网络开关；
+5. 用固定问题集记录 DeepSeek 首 token、端到端延迟、用量和角色一致性基线；
 6. 用 `dolls-voice` 流式 TTS 替换 macOS 系统声音。
 
 首次实测结果见 [本地无 API 基线](./docs/local-no-api-baseline.md)。
+角色包接入结果见 [三月七角色包消费基线](./docs/character-package-baseline.md)。

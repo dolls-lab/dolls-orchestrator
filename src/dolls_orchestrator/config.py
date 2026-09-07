@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 import os
+from pathlib import Path
 from typing import Mapping, Optional
 
 
@@ -61,6 +62,7 @@ class Settings:
     deepseek_max_output_tokens: int = 256
     mlx_whisper_model: str = "mlx-community/whisper-small-mlx"
     macos_voice: str = "Tingting"
+    character_package_path: Optional[Path] = None
 
     @classmethod
     def from_env(cls, environ: Optional[Mapping[str, str]] = None) -> "Settings":
@@ -101,4 +103,9 @@ class Settings:
                 "DOLLS_MLX_WHISPER_MODEL", "mlx-community/whisper-small-mlx"
             ),
             macos_voice=env.get("DOLLS_MACOS_VOICE", "Tingting"),
+            character_package_path=(
+                Path(env["DOLLS_CHARACTER_PACKAGE_PATH"].strip()).expanduser()
+                if env.get("DOLLS_CHARACTER_PACKAGE_PATH", "").strip()
+                else None
+            ),
         )

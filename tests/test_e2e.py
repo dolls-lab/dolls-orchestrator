@@ -41,6 +41,8 @@ class OfflineEndToEndTests(unittest.TestCase):
             telemetry = json.loads(next(line for line in lines if line.startswith("{")))
             self.assertEqual("completed", telemetry["status"])
             self.assertEqual(["asr", "llm", "tts"], sorted(telemetry["stages"]))
+            self.assertEqual("builtin-march-7th-style", telemetry["character_id"])
+            self.assertEqual("builtin-v1", telemetry["character_version"])
             self.assertNotIn("api_key", telemetry)
 
     def test_invalid_input_exits_nonzero(self):
@@ -61,4 +63,3 @@ class OfflineEndToEndTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

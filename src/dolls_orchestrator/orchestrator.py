@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import AsyncIterator, Callable, Dict, List, Mapping, Optional
 from uuid import uuid4
 
+from .character import BUILTIN_CHARACTER, CharacterPackage
 from .config import Settings
 from .domain import (
     ASRAdapter,
@@ -36,11 +37,6 @@ StateSink = Callable[[str], None]
 
 
 class TurnOrchestrator:
-    CHARACTER_INSTRUCTION = (
-        "你是三月七风格的对话角色。语气活泼、友善、简短；不知道时坦率说明，"
-        "不要声称自己是真实人物。单次回答尽量控制在一百五十个汉字以内。"
-    )
-
     def __init__(
         self,
         asr: ASRAdapter,
@@ -50,6 +46,7 @@ class TurnOrchestrator:
         conversations: Optional[ConversationStore] = None,
         telemetry_sink: Optional[TelemetrySink] = None,
         state_sink: Optional[StateSink] = None,
+        character: CharacterPackage = BUILTIN_CHARACTER,
     ) -> None:
         self.asr = asr
         self.llm = llm
@@ -58,6 +55,7 @@ class TurnOrchestrator:
         self.conversations = conversations or ConversationStore(settings.context_turns)
         self.telemetry_sink = telemetry_sink
         self.state_sink = state_sink
+        self.character = character
         self.last_telemetry: Optional[TurnTelemetry] = None
         self._active_generations: Dict[str, str] = {}
         self._active_tasks: Dict[str, asyncio.Task] = {}
@@ -81,6 +79,8 @@ class TurnOrchestrator:
             session_id=context.session_id,
             turn_id=context.turn_id,
             generation_id=context.generation_id,
+            character_id=self.character.character_id,
+            character_version=self.character.package_version,
         )
         total_started = time.perf_counter()
         current_stage = "asr"
@@ -98,9 +98,7 @@ class TurnOrchestrator:
                 elapsed_ms=asr_result.elapsed_ms,
             )
 
-            messages: List[Mapping[str, str]] = [
-                {"role": "system", "content": self.CHARACTER_INSTRUCTION}
-            ]
+            messages: List[Mapping[str, str]] = self.character.message_prefix()
             messages.extend(self.conversations.messages(session_id))
             messages.append({"role": "user", "content": asr_result.text})
 

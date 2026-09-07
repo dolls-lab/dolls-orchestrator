@@ -9,6 +9,7 @@ import sys
 from typing import Optional, Sequence
 
 from .audio import write_wav
+from .character import load_character_package, resolve_character
 from .config import ConfigurationError, Settings
 from .desktop_audio import AfplayPlayer, SoundDeviceRecorder
 from .errors import OrchestratorError
@@ -29,6 +30,9 @@ def _parser() -> argparse.ArgumentParser:
         help="adapter profile; overrides DOLLS_PROFILE",
     )
     run_turn.add_argument("--session-id", default="desktop")
+    run_turn.add_argument(
+        "--character-package", type=Path, help="contract-v1 character package directory"
+    )
     chat = subparsers.add_parser("chat", help="start an interactive push-to-talk session")
     chat.add_argument(
         "--profile",
@@ -39,18 +43,31 @@ def _parser() -> argparse.ArgumentParser:
     chat.add_argument("--device", help="sounddevice input device index or name")
     chat.add_argument("--no-playback", action="store_true")
     chat.add_argument("--max-turns", type=int, help="stop after this many successful turns")
+    chat.add_argument(
+        "--character-package", type=Path, help="contract-v1 character package directory"
+    )
     devices = subparsers.add_parser("devices", help="list available audio devices")
+    validate_character = subparsers.add_parser(
+        "validate-character", help="validate one character package"
+    )
+    validate_character.add_argument("package", type=Path)
+    character_info = subparsers.add_parser(
+        "character-info", help="show active character metadata"
+    )
+    character_info.add_argument("--character-package", type=Path)
     return parser
 
 
 async def _run_turn(args: argparse.Namespace, settings: Settings) -> int:
     profile_name = args.profile or settings.profile
     profile = build_profile(profile_name, settings)
+    character = resolve_character(settings.character_package_path)
     orchestrator = TurnOrchestrator(
         asr=profile.asr,
         llm=profile.llm,
         tts=profile.tts,
         settings=settings,
+        character=character,
     )
     result = await orchestrator.run_turn(args.input, session_id=args.session_id)
     write_wav(args.output, result.audio, result.audio_format)
@@ -71,11 +88,13 @@ async def _chat(args: argparse.Namespace, settings: Settings) -> int:
     if args.max_turns is not None and args.max_turns <= 0:
         raise ConfigurationError("--max-turns must be greater than zero")
     profile = build_profile(args.profile, settings)
+    character = resolve_character(settings.character_package_path)
     orchestrator = TurnOrchestrator(
         asr=profile.asr,
         llm=profile.llm,
         tts=profile.tts,
         settings=settings,
+        character=character,
     )
     recorder = SoundDeviceRecorder(device=_device_value(args.device))
     player = None if args.no_playback else AfplayPlayer()
@@ -95,12 +114,30 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         settings = Settings.from_env()
         if getattr(args, "profile", None):
             settings = replace(settings, profile=args.profile)
+        if getattr(args, "character_package", None) is not None:
+            settings = replace(
+                settings, character_package_path=args.character_package.expanduser()
+            )
         if args.command == "run-turn":
             return asyncio.run(_run_turn(args, settings))
         if args.command == "chat":
             return asyncio.run(_chat(args, settings))
         if args.command == "devices":
             print(SoundDeviceRecorder().list_devices())
+            return 0
+        if args.command == "validate-character":
+            print(json.dumps(
+                load_character_package(args.package).summary(),
+                ensure_ascii=False,
+                sort_keys=True,
+            ))
+            return 0
+        if args.command == "character-info":
+            print(json.dumps(
+                resolve_character(settings.character_package_path).summary(),
+                ensure_ascii=False,
+                sort_keys=True,
+            ))
             return 0
         raise ConfigurationError("unknown command")
     except (ConfigurationError, OrchestratorError, ValueError) as exc:
