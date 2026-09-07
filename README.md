@@ -43,7 +43,7 @@ openspec init --tools codex --profile core
 
 编排服务支持独立加载 `dolls-character` 发布的 contract-v1 角色包。未配置角色包时继续使用具名内置回退；显式配置的包如果损坏或不兼容，启动会直接失败，不会悄悄回退。
 
-仓库同时提供小智兼容终端协议草案 v0 的纯协议 codec、fixtures、连接级状态机和可选 WebSocket 传输层。传输层使用真实 localhost TCP/WebSocket 验证握手、控制消息、原始音频帧、取消和旧 generation 丢弃语义；尚未包含 Opus 编解码、模型编排桥接或 Atom VoiceS3R 实机兼容结论。
+仓库同时提供小智兼容终端协议草案 v0 的纯协议 codec、fixtures、连接级状态机、WebSocket 传输层、原生 Opus codec 和编排桥接。完整离线 runner 使用真实 localhost TCP/WebSocket 验证握手、raw Opus、编排、取消和旧 generation 丢弃语义；Atom VoiceS3R 实机兼容仍待用户侧联调。
 
 项目推荐 Python 3.12；标准库离线核心也兼容开发机自带的 Python 3.9。推荐后续使用 `uv` 创建 Python 3.12 环境：
 
@@ -162,7 +162,9 @@ uv pip install -e '.[terminal]'
 
 传输模块提供默认仅绑定 `127.0.0.1` 的 `serve_terminal(...)` API。它在 `/xiaozhi/v1/` 升级握手前验证 protocol、device、client 和 bearer headers，再把当前轮的原始上行帧交给注入式异步 handler。handler 返回的 STT、LLM、TTS 生命周期和原始下行帧按固定顺序发送；abort、goodbye 或断线会取消 handler 并禁止旧 generation 继续输出。
 
-`OrchestratorTerminalBridge` 可以把 `LibOpusCodec` 解码出的 16 kHz PCM 经临时 WAV 交给现有 ASR/LLM/TTS 编排器，再编码为 24 kHz、60 ms 的 raw Opus 下行帧。原生 codec 直接调用系统 `libopus`，不读取 API key；当前仍不是完整语音服务启动命令，也不会默认打开局域网监听。实现和本地验证说明见 [终端 WebSocket loopback](./docs/terminal-websocket-loopback.md)、[终端音频编排桥接](./docs/terminal-audio-bridge.md) 与 [原生 Opus codec](./docs/native-opus-codec.md)。
+`OrchestratorTerminalBridge` 可以把 `LibOpusCodec` 解码出的 16 kHz PCM 经临时 WAV 交给现有 ASR/LLM/TTS 编排器，再编码为 24 kHz、60 ms 的 raw Opus 下行帧。原生 codec 直接调用系统 `libopus`，不读取 API key。实现和本地验证说明见 [终端 WebSocket loopback](./docs/terminal-websocket-loopback.md)、[终端音频编排桥接](./docs/terminal-audio-bridge.md) 与 [原生 Opus codec](./docs/native-opus-codec.md)。
+
+设置 `DOLLS_TERMINAL_TOKEN` 后，可以先用 `health --terminal` 预检，再通过 `serve-terminal --profile offline` 启动完整的无 API 服务。默认只监听 `127.0.0.1:8765`；非回环地址还必须显式使用 `--allow-lan`。配置、安全边界和关闭语义见 [终端服务 runner](./docs/terminal-service-runner.md)。
 
 MLX Whisper 的预留配置：
 

@@ -32,6 +32,13 @@ def _positive_float(env: Mapping[str, str], name: str, default: float) -> float:
     return value
 
 
+def _port(env: Mapping[str, str], name: str, default: int) -> int:
+    value = _positive_int(env, name, default)
+    if value > 65535:
+        raise ConfigurationError("%s must be at most 65535" % name)
+    return value
+
+
 def _bool(env: Mapping[str, str], name: str, default: bool) -> bool:
     raw = env.get(name)
     if raw is None:
@@ -63,6 +70,10 @@ class Settings:
     mlx_whisper_model: str = "mlx-community/whisper-small-mlx"
     macos_voice: str = "Tingting"
     character_package_path: Optional[Path] = None
+    terminal_host: str = "127.0.0.1"
+    terminal_port: int = 8765
+    terminal_token: Optional[str] = field(default=None, repr=False)
+    libopus_path: Optional[Path] = None
 
     @classmethod
     def from_env(cls, environ: Optional[Mapping[str, str]] = None) -> "Settings":
@@ -78,6 +89,14 @@ class Settings:
         model = env.get("DOLLS_LLM_MODEL", "deepseek-v4-flash").strip()
         if not model:
             raise ConfigurationError("DOLLS_LLM_MODEL must not be empty")
+        terminal_host = env.get("DOLLS_TERMINAL_HOST", "127.0.0.1").strip()
+        if not terminal_host:
+            raise ConfigurationError("DOLLS_TERMINAL_HOST must not be empty")
+        terminal_token = env.get("DOLLS_TERMINAL_TOKEN") or None
+        if terminal_token is not None and any(
+            character.isspace() for character in terminal_token
+        ):
+            raise ConfigurationError("DOLLS_TERMINAL_TOKEN must not contain whitespace")
         return cls(
             profile=profile,
             context_turns=_positive_int(env, "DOLLS_CONTEXT_TURNS", 6),
@@ -106,6 +125,14 @@ class Settings:
             character_package_path=(
                 Path(env["DOLLS_CHARACTER_PACKAGE_PATH"].strip()).expanduser()
                 if env.get("DOLLS_CHARACTER_PACKAGE_PATH", "").strip()
+                else None
+            ),
+            terminal_host=terminal_host,
+            terminal_port=_port(env, "DOLLS_TERMINAL_PORT", 8765),
+            terminal_token=terminal_token,
+            libopus_path=(
+                Path(env["DOLLS_LIBOPUS_PATH"].strip()).expanduser()
+                if env.get("DOLLS_LIBOPUS_PATH", "").strip()
                 else None
             ),
         )

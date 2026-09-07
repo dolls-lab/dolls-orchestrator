@@ -6,7 +6,7 @@
 
 ## 目标
 
-`terminal_transport.py` 把已经验证的终端 codec 和 `TerminalSession` 接到真实 WebSocket 握手与帧传输上。它用于证明协议边界在网络库中仍然成立，为后续 Opus 和编排器桥接提供稳定入口。
+`terminal_transport.py` 把已经验证的终端 codec 和 `TerminalSession` 接到真实 WebSocket 握手与帧传输上。它证明协议边界在网络库中仍然成立，并由终端服务 runner 与原生 Opus、编排器桥接共同装配。
 
 ```text
 localhost client
@@ -77,8 +77,7 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src \
 
 ## 当前不代表
 
-- synthetic bytes 不是经过验证的 Opus 音频；
 - loopback 成功不代表 Atom VoiceS3R 固件已经兼容；
-- 已提供可注入 codec 的 `TurnOrchestrator` 桥接器，但尚未选择或实现真实 Opus codec；
-- 尚未提供生产服务命令、TLS、LAN 部署或重连策略；
+- synthetic transport 单测不解码音频；真实 Opus 与完整装配由独立集成测试覆盖；
+- 已提供显式终端服务命令，但尚未提供 TLS、服务管理器或自动重连策略；
 - 协议仍为 draft v0，必须通过指定固件实测后才能冻结 v1。

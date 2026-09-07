@@ -22,6 +22,7 @@ from .health import check_service_health
 from .interactive import InteractiveSession
 from .orchestrator import TurnOrchestrator
 from .profiles import build_profile
+from .terminal_service import TerminalServiceNotReadyError, run_terminal_service
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -82,6 +83,29 @@ def _parser() -> argparse.ArgumentParser:
         help="adapter profile; overrides DOLLS_PROFILE",
     )
     health.add_argument("--character-package", type=Path)
+    health.add_argument(
+        "--terminal",
+        action="store_true",
+        help="include terminal transport, codec, and authentication readiness",
+    )
+    terminal = subparsers.add_parser(
+        "serve-terminal", help="serve terminal WebSocket voice turns"
+    )
+    terminal.add_argument(
+        "--profile",
+        choices=("offline", "offline-macos", "local-no-api", "local-voice"),
+        help="adapter profile; overrides DOLLS_PROFILE",
+    )
+    terminal.add_argument("--host", help="bind host; overrides DOLLS_TERMINAL_HOST")
+    terminal.add_argument(
+        "--port", type=int, help="bind port; overrides DOLLS_TERMINAL_PORT"
+    )
+    terminal.add_argument(
+        "--allow-lan",
+        action="store_true",
+        help="explicitly allow a non-loopback bind address",
+    )
+    terminal.add_argument("--character-package", type=Path)
     return parser
 
 
@@ -146,6 +170,25 @@ async def _evaluate_character(args: argparse.Namespace, settings: Settings) -> i
     return 1 if report.failed_count else 0
 
 
+async def _serve_terminal(args: argparse.Namespace, settings: Settings) -> int:
+    def started(running):
+        print(json.dumps(running.status(), ensure_ascii=False, sort_keys=True))
+
+    try:
+        await run_terminal_service(
+            settings,
+            profile_name=args.profile or settings.profile,
+            host=args.host or settings.terminal_host,
+            port=settings.terminal_port if args.port is None else args.port,
+            allow_lan=args.allow_lan,
+            on_started=started,
+        )
+    except TerminalServiceNotReadyError as exc:
+        print(json.dumps(exc.report.to_dict(), ensure_ascii=False, sort_keys=True))
+        return 1
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = _parser().parse_args(argv)
     try:
@@ -180,9 +223,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if args.command == "evaluate-character":
             return asyncio.run(_evaluate_character(args, settings))
         if args.command == "health":
-            report = check_service_health(args.profile or settings.profile, settings)
+            report = check_service_health(
+                args.profile or settings.profile,
+                settings,
+                include_terminal=args.terminal,
+            )
             print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
             return 0 if report.ready else 1
+        if args.command == "serve-terminal":
+            return asyncio.run(_serve_terminal(args, settings))
         raise ConfigurationError("unknown command")
     except (ConfigurationError, OrchestratorError, ValueError) as exc:
         print("error: %s" % exc, file=sys.stderr)

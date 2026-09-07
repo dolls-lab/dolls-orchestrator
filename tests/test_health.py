@@ -112,6 +112,66 @@ class ServiceHealthTests(unittest.TestCase):
         self.assertEqual("builtin-v1", report.components[0].model)
         self.assertEqual("ready", report.to_dict()["status"])
 
+    def test_terminal_health_is_opt_in_stable_and_secret_safe(self):
+        secret = "terminal-health-secret"
+        settings = Settings(terminal_token=secret)
+        with mock.patch(
+            "dolls_orchestrator.health.importlib.util.find_spec",
+            return_value=object(),
+        ), mock.patch("dolls_orchestrator.health.LibOpusCodec") as codec_type:
+            codec_type.return_value.version = "libopus-test"
+            default = check_service_health("offline", settings)
+            terminal = check_service_health(
+                "offline", settings, include_terminal=True
+            )
+
+        self.assertEqual(4, len(default.components))
+        self.assertEqual(
+            ["terminal_transport", "terminal_audio_codec", "terminal_auth"],
+            [component.stage for component in terminal.components[-3:]],
+        )
+        self.assertTrue(terminal.ready)
+        self.assertNotIn(secret, json.dumps(terminal.to_dict()))
+
+    def test_terminal_health_reports_each_missing_prerequisite(self):
+        settings = Settings(
+            terminal_token=None,
+            libopus_path=Path("/missing/libopus"),
+        )
+        with mock.patch(
+            "dolls_orchestrator.health.importlib.util.find_spec", return_value=None
+        ):
+            report = check_service_health(
+                "offline", settings, include_terminal=True
+            )
+        self.assertFalse(report.ready)
+        self.assertEqual(
+            [
+                "dependency_missing_websockets",
+                "dependency_missing_libopus",
+                "credential_missing",
+            ],
+            [component.reason for component in report.components[-3:]],
+        )
+
+    def test_terminal_health_cli_appends_components(self):
+        stdout = io.StringIO()
+        with mock.patch.dict(
+            "os.environ",
+            {"DOLLS_TERMINAL_TOKEN": "terminal-cli-secret"},
+            clear=True,
+        ), mock.patch(
+            "dolls_orchestrator.health.importlib.util.find_spec",
+            return_value=object(),
+        ), mock.patch(
+            "dolls_orchestrator.health.LibOpusCodec"
+        ) as codec_type, redirect_stdout(stdout):
+            codec_type.return_value.version = "libopus-test"
+            self.assertEqual(0, main(["health", "--terminal"]))
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(7, len(payload["components"]))
+        self.assertNotIn("terminal-cli-secret", stdout.getvalue())
+
     def test_invalid_character_is_generic_and_other_checks_continue(self):
         settings = Settings(character_package_path=Path("/missing/character-package"))
         report = check_service_health("offline", settings)

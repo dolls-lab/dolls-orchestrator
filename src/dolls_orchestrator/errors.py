@@ -58,6 +58,11 @@ class OpusCodecError(OrchestratorError):
         super().__init__(message, "terminal_audio_codec")
 
 
+class TerminalServiceError(OrchestratorError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "terminal_service")
+
+
 class StageTimeoutError(OrchestratorError):
     pass
 

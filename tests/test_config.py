@@ -19,6 +19,10 @@ class SettingsTests(unittest.TestCase):
                 "DOLLS_DEEPSEEK_NETWORK_ENABLED": "yes",
                 "DEEPSEEK_API_KEY": "secret-value",
                 "DOLLS_CHARACTER_PACKAGE_PATH": "/tmp/test-character",
+                "DOLLS_TERMINAL_HOST": "localhost",
+                "DOLLS_TERMINAL_PORT": "9876",
+                "DOLLS_TERMINAL_TOKEN": "terminal-secret-value",
+                "DOLLS_LIBOPUS_PATH": "/tmp/libopus-test.dylib",
             }
         )
         self.assertEqual(3, settings.context_turns)
@@ -26,6 +30,11 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual("secret-value", settings.deepseek_api_key)
         self.assertNotIn("secret-value", repr(settings))
         self.assertEqual(Path("/tmp/test-character"), settings.character_package_path)
+        self.assertEqual("localhost", settings.terminal_host)
+        self.assertEqual(9876, settings.terminal_port)
+        self.assertEqual("terminal-secret-value", settings.terminal_token)
+        self.assertNotIn("terminal-secret-value", repr(settings))
+        self.assertEqual(Path("/tmp/libopus-test.dylib"), settings.libopus_path)
 
     def test_invalid_values_fail_fast(self):
         for environment in (
@@ -33,6 +42,10 @@ class SettingsTests(unittest.TestCase):
             {"DOLLS_ASR_TIMEOUT_SECONDS": "invalid"},
             {"DOLLS_DEEPSEEK_NETWORK_ENABLED": "maybe"},
             {"DOLLS_LLM_BASE_URL": "http://insecure.example"},
+            {"DOLLS_TERMINAL_HOST": " "},
+            {"DOLLS_TERMINAL_PORT": "0"},
+            {"DOLLS_TERMINAL_PORT": "65536"},
+            {"DOLLS_TERMINAL_TOKEN": "has whitespace"},
         ):
             with self.subTest(environment=environment):
                 with self.assertRaises(ConfigurationError):
